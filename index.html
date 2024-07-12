@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="keywords" content="simulado, anatel, telecomunicação, legislação, radioamador, radiofrequência, coer, prova, teste" />
+    <link rel="stylesheet" href="https://unpkg.com/buefy/dist/buefy.min.css">
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.3.45/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+    <title>SexyClubeDb</title>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <section class="articles">
+                <div class="column is-8 is-offset-2">
+                    <div class="card article" v-if="!revistaSelecionada">
+                        <div class="card-content">
+                            <div class="media">
+                                <div class="media-content has-text-centered">
+                                    <p class="title article-title">SexyClubeDb</p>
+                                    <p><strong>sexy clube database</strong></p>
+                                </div>
+                            </div>
+                            <div class="content article-body">
+                                <p>Selecione uma revista:</p>
+                                <div class="buttons">
+                                    <b-button type="is-primary" v-for="revista in revistas" :key="revista.arquivo"
+                                        @click="revistaSelecionada = revista">
+                                        {{ revista.titulo }}
+                                    </b-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card article" v-else>
+                        <div class="card-content">
+                            <b-button @click="limparSelecao()">Voltar</b-button>
+                        </div>
+
+                        <div class="row columns is-multiline">
+                            <div v-for="(edicao, i) in edicoes" :key=`edicao-${i}` class="column is-4">
+                                <div class="card large">
+                                    <div class="card-image">
+                                        <figure class="image is-4by5" v-if="edicao.imagens">
+                                            <img :src="edicao.imagens[0]" alt="Image" />
+                                        </figure>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="media">
+                                            <div class="media-content">
+                                                <p class="title is-4 no-padding" v-if="edicao.titulo">
+                                                    {{ edicao.titulo }}</p>
+                                                <p class="title is-6" v-if="edicao.edicao">
+                                                    <span>Edição {{ edicao.edicao }}</span>
+                                                </p>
+                                                <p class="subtitle is-6">{{ formatarData(edicao) }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+                                            <ul class="is-4 no-padding">
+                                                <li v-for="(principal, j) in edicao.principal" :key="`principal-${j}`">
+                                                    {{ principal }}
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <b-loading :is-full-page="true" v-model="carregando" :can-cancel="true">
+            <template
+                v-if="revistaSelecionada">{{ parseInt((comprimentoRecebido/revistaSelecionada.tamanho)*100) }}%</template>
+            <b-loading :active="true"></b-loading>
+        </b-loading>
+    </div>
+
+    <script src="https://unpkg.com/vue@2"></script>
+    <script src="https://unpkg.com/buefy/dist/buefy.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
+
+    <script>
+		if (!self.fetch) {
+		    alert('Navegador incompatível com esse site.')
+		}
+
+        new Vue({
+            el: '#app',
+            data: {
+                carregando: false,
+                comprimentoRecebido: 0,
+                revistas: [
+                    { 
+                        titulo: "Revista Sexy Online", 
+                        arquivo: "https://raw.githubusercontent.com/forfeit-tg/sexyclubedb/main/revista-sexy-online.json",
+                        tamanho: 2724413
+                    },
+                    { 
+                        titulo: "Revista Sexy Especial", 
+                        arquivo: "https://raw.githubusercontent.com/forfeit-tg/sexyclubedb/main/revista-sexy-especial.json",
+                        tamanho: 0
+                    },
+                    { 
+                        titulo: "Revista Sexy Premium", 
+                        arquivo: "https://raw.githubusercontent.com/forfeit-tg/sexyclubedb/main/revista-sexy-premium.json",
+                        tamanho: 103469051
+                    },
+                    { 
+                        titulo: "Revista Premium Especial", 
+                        arquivo: "https://raw.githubusercontent.com/forfeit-tg/sexyclubedb/main/revista-premium-especial.json",
+                        tamanho: 8501590
+                    },
+                ],
+                revistaSelecionada: null,
+                edicoes: null,
+            },
+
+            mounted() {
+                
+            },
+
+            watch: {
+                'revistaSelecionada': async function(valor) {
+                    if (valor) {
+                        this.carregando = true
+                        await this.carregarEdicoes()
+                        this.carregando = false
+                    }
+                }
+            },
+            methods: {
+                limparSelecao() {
+                    this.revistaSelecionada = null
+                    this.edicoes = null
+                },
+				async carregarEdicoes() {
+					var that = this
+					var resposta = await fetch(this.revistaSelecionada.arquivo)
+                    if (resposta.ok) {
+                        //var resultado = await resposta.json()
+
+                        const leitor = resposta.body.getReader()
+                        //const comprimentoConteudo = +resposta.headers.get('Content-Length')
+                        const comprimentoConteudo = this.revistaSelecionada.tamanho
+                        this.comprimentoRecebido = 0
+                        let pedacos = []
+                        while(true) {
+                            const { done, value } = await leitor.read()
+
+                            if (done) {
+                                break
+                            }
+
+                            pedacos.push(value)
+                            this.comprimentoRecebido += value.length
+
+                            console.log(`Recebido ${this.comprimentoRecebido} de ${comprimentoConteudo}`)
+                        }
+
+                        let todosPedacos = new Uint8Array(this.comprimentoRecebido)
+                        let posicao = 0;
+                        for (let pedaco of pedacos) {
+                            todosPedacos.set(pedaco, posicao)
+                            posicao += pedaco.length;
+                        }
+
+                        let resultado = JSON.parse(new TextDecoder("utf-8").decode(todosPedacos))
+                        console.log('resultado', resultado)
+                    
+                        this.edicoes = resultado
+                    } else {
+                        this.limparSelecao()
+                        this.$buefy.toast.open({
+                            duration: 5000,
+                            message: 'Erro ao carregar essa revista.',
+                            position: 'is-bottom',
+                            type: 'is-danger'
+                        })
+                    }
+				},
+				
+                formatarData(edicao) {
+                    if (edicao.ano && edicao.mes) {
+                        const data = new Date(Date.UTC(edicao.ano, edicao.mes))
+                        return data.toLocaleDateString("pt-BR", { year: "numeric",  month: "long" })
+                    } else if (edicao.ano && !edicao.mes) {
+                        return edicao.ano
+                    } else if (!edicao.ano && edicao.mes) {
+                        const data = new Date(Date.UTC(0, edicao.mes))
+                        return data.toLocaleDateString("pt-BR", { month: "long" })
+                    }
+                }
+            },
+            computed: {
+                
+            },
+        })
+    </script>
+</body>
+</html>
