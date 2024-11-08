@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="keywords" content="simulado, anatel, telecomunicação, legislação, radioamador, radiofrequência, coer, prova, teste" />
+    <link rel="stylesheet" href="https://unpkg.com/buefy/dist/buefy.min.css">
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.3.45/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+    <title>SexyClubeArchive</title>
+    <style>
+        .blur {
+            filter: blur(5px);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <section class="articles">
+                <div class="column is-12">
+                    <div class="card article" v-if="!revistaSelecionada">
+                        <div class="card-content">
+                            <div class="media">
+                                <div class="media-content has-text-centered">
+                                    <p class="title article-title">SexyClubeArchive</p>
+                                    <p><strong>lista de capas das revistas sexy</strong></p>
+                                </div>
+                            </div>
+                            <div class="content article-body">
+                                <p>Selecione uma revista:</p>
+                                <div class="buttons">
+                                    <b-button 
+                                        type="is-primary" 
+                                        v-for="revista in revistas" 
+                                        :key="revista.arquivo"
+                                        @click="revistaSelecionada = revista"
+                                    >
+                                        {{ revista.titulo }}
+                                    </b-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card article" v-else>
+                        <div class="card-content">
+                            <b-button @click="limparSelecao()">Voltar</b-button>
+                            <div class="media">
+                                <div class="media-content has-text-centered">
+                                    <p class="title article-title mt-2">{{ revistaSelecionada.titulo }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row columns is-multiline">
+                            <div v-for="(edicao, i) in revistaSelecionada.edicoes" :key=`edicao-${i}` class="column is-4">
+                                <div class="card large">
+                                    <div class="card-image">
+                                        <figure class="image is-4by5" v-if="edicao.imagens && edicao.imagens.length">
+                                            <img 
+                                                :src="edicao.imagens[0]" 
+                                                :alt="edicao.titulo" 
+                                                :class="{ blur: desfocar }"
+                                                @click="desfocar = false"
+                                            />
+                                        </figure>
+                                        <figure class="image is-4by5 has-background-light" v-else>
+                                        </figure>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="media">
+                                            <div class="media-content">
+                                                <b-tag rounded v-if="edicao.colecionador">Edição de Colecionador</b-tag>
+                                                <p class="title is-4 no-padding" v-if="edicao.titulo">
+                                                    {{ edicao.titulo }}
+                                                </p>
+                                                <p class="title is-6" v-if="edicao.edicao">
+                                                    <span>Edição {{ edicao.edicao }}</span>
+                                                </p>
+                                                <b-taglist attached v-if="edicao.editora || edicao.preco">
+                                                    <b-tag type="is-dark" v-if="edicao.editora">Editora {{ edicao.editora }}</b-tag>
+                                                    <b-tag type="is-info" v-if="edicao.preco">{{ edicao.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) }}</b-tag>
+                                                </b-taglist>
+                                                <p class="subtitle is-6">{{ formatarData(edicao) }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="content">
+                                            <ul class="is-4 no-padding" v-if="edicao.principal && edicao.principal.length && edicao.principal[0]">
+                                                <li v-for="(principal, j) in edicao.principal" :key="`principal-${j}`">
+                                                    {{ principal }}
+                                                </li>
+                                                <li v-if="edicao.secundario && edicao.secundario.length && edicao.secundario[0]">
+                                                    Mais:
+                                                    <ul class="is-4 no-padding">
+                                                        <li v-for="(secundario, k) in edicao.secundario" :key="`secundario-${k}`">
+                                                            {{ secundario }}
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                            <p v-else><i>não catalogado</i></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <b-loading :is-full-page="true" v-model="carregando" :can-cancel="true">
+            <template v-if="revistaSelecionada">
+                <span v-if="revistaSelecionada.tamanho">{{ parseInt((revistaSelecionada.comprimentoRecebido/revistaSelecionada.tamanho)*100) }}%</span>
+                <span v-else>Aguarde...</span>
+            </template>
+            <b-loading :active="true"></b-loading>
+        </b-loading>
+    </div>
+
+    <script src="https://unpkg.com/vue@2"></script>
+    <script src="https://unpkg.com/buefy/dist/buefy.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
+
+    <script>
+		if (!self.fetch) {
+		    alert('Navegador incompatível com esse site.')
+		}
+
+        new Vue({
+            el: '#app',
+            data: {
+                desfocar: true,
+                carregando: false,
+                revistas: [
+                    { 
+                        titulo: "Revista Sexy", 
+                        arquivo: "https://media.githubusercontent.com/media/forfeit-tg/sexyclubearchive/master/revista-sexy.json",
+                        tamanho: 0,
+                        comprimentoRecebido: 0,
+                        edicoes: null,
+                    },                    
+                    { 
+                        titulo: "Revista Sexy Online", 
+                        arquivo: "https://media.githubusercontent.com/media/forfeit-tg/sexyclubearchive/master/revista-sexy-online.json",
+                        tamanho: 0,
+                        comprimentoRecebido: 0,
+                        edicoes: null,
+                    },
+                    { 
+                        titulo: "Revista Sexy Especial", 
+                        arquivo: "https://media.githubusercontent.com/media/forfeit-tg/sexyclubearchive/master/revista-sexy-especial.json",
+                        tamanho: 0,
+                        comprimentoRecebido: 0,
+                        edicoes: null,
+                    },
+                    { 
+                        titulo: "Revista Sexy Premium", 
+                        arquivo: "https://media.githubusercontent.com/media/forfeit-tg/sexyclubearchive/master/revista-sexy-premium.json",
+                        tamanho: 0,
+                        comprimentoRecebido: 0,
+                        edicoes: null,
+                    },
+                    { 
+                        titulo: "Revista Premium Especial", 
+                        arquivo: "https://media.githubusercontent.com/media/forfeit-tg/sexyclubearchive/master/revista-premium-especial.json",
+                        tamanho: 0,
+                        comprimentoRecebido: 0,
+                        edicoes: null,
+                    },
+                ],
+                revistaSelecionada: null,
+            },
+
+            watch: {
+                'revistaSelecionada': async function(revista) {
+                    if (revista) {
+                        this.carregando = true
+                        await this.carregarEdicoes(revista)
+                        this.carregando = false
+                    }
+                }
+            },
+            methods: {
+                limparSelecao() {
+                    this.revistaSelecionada = null
+                },
+
+				async carregarEdicoes(revista) {
+                    if (revista.edicoes) {
+                        return revista.edicoes
+                    }
+
+					revista.comprimentoRecebido = 0
+
+					var resposta = await fetch(revista.arquivo)
+                    if (resposta.ok) {
+                        const leitor = resposta.body.getReader()
+                        revista.tamanho = resposta.headers.get('Content-Length')
+
+                        let pedacos = []
+                        while(true) {
+                            const { done, value } = await leitor.read()
+
+                            if (done) {
+                                break
+                            }
+
+                            pedacos.push(value)
+                            revista.comprimentoRecebido += value.length
+
+                            console.log(`Recebido ${revista.comprimentoRecebido} de ${revista.tamanho}`)
+                        }
+
+                        let todosPedacos = new Uint8Array(revista.comprimentoRecebido)
+                        let posicao = 0;
+                        for (let pedaco of pedacos) {
+                            todosPedacos.set(pedaco, posicao)
+                            posicao += pedaco.length;
+                        }
+
+                        let resultado = JSON.parse(new TextDecoder("utf-8").decode(todosPedacos))
+                        console.log('resultado', resultado)
+                    
+                        revista.edicoes = resultado
+                    } else {
+                        this.limparSelecao()
+                        this.$buefy.toast.open({
+                            duration: 5000,
+                            message: 'Erro ao carregar essa revista.',
+                            position: 'is-bottom',
+                            type: 'is-danger'
+                        })
+                    }
+				},
+				
+                formatarData(edicao) {
+                    if (edicao.ano && edicao.mes) {
+                        const data = new Date(Date.UTC(edicao.ano, edicao.mes))
+                        return data.toLocaleDateString("pt-BR", { year: "numeric",  month: "long" })
+                    } else if (edicao.ano && !edicao.mes) {
+                        return edicao.ano
+                    } else if (!edicao.ano && edicao.mes) {
+                        const data = new Date(Date.UTC(0, edicao.mes))
+                        return data.toLocaleDateString("pt-BR", { month: "long" })
+                    }
+                }
+            },
+        })
+    </script>
+</body>
+</html>
