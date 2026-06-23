@@ -12,6 +12,10 @@
         .blur {
             filter: blur(5px);
         }
+
+        .b-table .table td {
+            vertical-align: middle;
+        }
     </style>
 </head>
 
@@ -135,13 +139,13 @@
                                     </span>
                                 </b-table-column>
 
-                                <b-table-column v-slot="props" field="modelos" label="Modelos" centered>
+                                <b-table-column v-slot="props" field="modelos" label="Modelos" centered width="20%">
                                     <ul class="is-4 no-padding">
                                         <li v-for="(principal, j) in props.row.principal" :key="`principal-${j}`">
                                             {{ principal }}
                                         </li>
                                         <li v-if="props.row.secundario && props.row.secundario.length && props.row.secundario[0]">
-                                            Mais:
+                                            <i>Mais</i>:
                                             <ul class="is-4 no-padding">
                                                 <li v-for="(secundario, k) in props.row.secundario" :key="`secundario-${k}`">
                                                     {{ secundario }}
