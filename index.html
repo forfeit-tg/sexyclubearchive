@@ -52,13 +52,123 @@
                                     <p class="title article-title mt-2">{{ revistaSelecionada.titulo }}</p>
                                 </div>
                             </div>
+
+                            <section>
+                                <b-dropdown v-model="modo" aria-role="list">
+                                    <template #trigger>
+                                        <b-button
+                                            type="is-primary"
+                                            icon-pack="fas"
+                                            :icon-left="modo == 'grade' ? 'th-large' : 'th-list'"
+                                            icon-right="caret-down"
+                                        />
+                                    </template>
+
+                                    <b-dropdown-item value="grade" aria-role="listitem">
+                                        <div class="media">
+                                            <b-icon class="media-left" icon="th-large" pack="fas"></b-icon>
+                                            <div class="media-content">
+                                                <h3>Grade</h3>
+                                            </div>
+                                        </div>
+                                    </b-dropdown-item>
+
+                                    <b-dropdown-item value="tabela" aria-role="listitem">
+                                        <div class="media">
+                                            <b-icon class="media-left" icon="th-list" pack="fas"></b-icon>
+                                            <div class="media-content">
+                                                <h3>Tabela</h3>
+                                            </div>
+                                        </div>
+                                    </b-dropdown-item>
+                                </b-dropdown>
+                            </section>                            
                         </div>
 
-                        <div class="row columns is-multiline">
+                        <div v-if="modo == 'tabela'" class="row columns is-multiline">
+                            <b-table
+                                :data="revistaSelecionada.edicoes ?? []"
+                                :loading="carregando"
+                                hoverable   
+                                mobile-cards
+                                striped
+                                class="column is-12"
+                            >
+                                <b-table-column v-slot="props" field="edicao" label="Edição" centered>
+                                    {{ props.row.edicao }}
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="ano" label="Ano" centered>
+                                    {{ props.row.ano }}
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="mes" label="Mês" centered>
+                                    {{ props.row.mes }}
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="titulo" label="Título" centered>
+                                    {{ props.row.titulo }}
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="colecionador" label="Colecionador" centered>
+                                    <b-tag v-if="props.row.colecionador" type="is-success" size="is-small">Sim</b-tag>
+                                    <b-tag v-else type="is-danger" size="is-small">Não</b-tag>
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="especial" label="Especial" centered>
+                                    <b-tag v-if="props.row.especial" type="is-success" size="is-small">Sim</b-tag>
+                                    <b-tag v-else type="is-danger" size="is-small">Não</b-tag>
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="aniversario" label="Aniversário" centered>
+                                    <b-tag v-if="props.row.aniversario" type="is-success" size="is-small">Sim</b-tag>
+                                    <b-tag v-else type="is-danger" size="is-small">Não</b-tag>
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="editora" label="Editora" centered>
+                                    {{ props.row.editora }}
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="preco" label="Preço" centered>
+                                    <span v-if="props.row.preco">
+                                        {{ props.row.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})  }}
+                                    </span>
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="modelos" label="Modelos" centered>
+                                    <ul class="is-4 no-padding">
+                                        <li v-for="(principal, j) in props.row.principal" :key="`principal-${j}`">
+                                            {{ principal }}
+                                        </li>
+                                        <li v-if="props.row.secundario && props.row.secundario.length && props.row.secundario[0]">
+                                            Mais:
+                                            <ul class="is-4 no-padding">
+                                                <li v-for="(secundario, k) in props.row.secundario" :key="`secundario-${k}`">
+                                                    {{ secundario }}
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </b-table-column>
+
+                                <b-table-column v-slot="props" field="capa" label="Capa" centered width="10%">
+                                    <figure v-if="props.row.imagens && props.row.imagens.length && props.row.imagens[0]" class="image is-4by5">
+                                        <img 
+                                            :src="props.row.imagens[0]" 
+                                            :class="{ blur: desfocar }"
+                                            @click="desfocar = false"
+                                        />
+                                    </figure>
+                                    <figure v-else class="image is-4by5 has-background-light"></figure>
+                                </b-table-column>
+                            </b-table>
+                        </div>
+
+                        <div v-if="modo == 'grade'" class="row columns is-multiline">
                             <div v-for="(edicao, i) in revistaSelecionada.edicoes" :key=`edicao-${i}` class="column is-4">
                                 <div class="card large">
                                     <div class="card-image">
-                                        <figure class="image is-4by5" v-if="edicao.imagens && edicao.imagens.length">
+                                        <figure v-if="edicao.imagens && edicao.imagens.length && edicao.imagens[0]" class="image is-4by5">
                                             <img 
                                                 :src="edicao.imagens[0]" 
                                                 :alt="edicao.titulo" 
@@ -66,8 +176,7 @@
                                                 @click="desfocar = false"
                                             />
                                         </figure>
-                                        <figure class="image is-4by5 has-background-light" v-else>
-                                        </figure>
+                                        <figure v-else class="image is-4by5 has-background-light"></figure>
                                     </div>
                                     <div class="card-content">
                                         <div class="media">
@@ -129,9 +238,14 @@
 		    alert('Navegador incompatível com esse site.')
 		}
 
+        Vue.use(Buefy, {
+            defaultIconPack: 'fas',
+        })
+
         new Vue({
             el: '#app',
             data: {
+                modo: 'grade',
                 desfocar: true,
                 carregando: false,
                 revistas: [
